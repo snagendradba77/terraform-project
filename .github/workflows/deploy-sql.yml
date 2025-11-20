@@ -4,22 +4,21 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'env/dev/**'
+      - 'env/test/**'
+      - 'env/prod/**'
 
 jobs:
   terraform:
-    runs-on: self-hosted  # or 'ubuntu-latest' if using GitHub-hosted runners
+    runs-on: self-hosted
     strategy:
       matrix:
-        environment: [dev, test, prod]  # Deploy to all environments or select
+        environment: [dev, test, prod]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: "latest"  # Example version
 
       - name: Terraform Init
         working-directory: env/${{ matrix.environment }}
