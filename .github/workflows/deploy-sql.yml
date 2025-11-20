@@ -19,7 +19,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: "1.7.6"  # Example version
+          terraform_version: "latest"  # Example version
 
       - name: Terraform Init
         working-directory: env/${{ matrix.environment }}
