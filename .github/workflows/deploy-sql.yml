@@ -1,0 +1,31 @@
+name: Deploy SQL Server Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: self-hosted  # or 'ubuntu-latest' if using GitHub-hosted runners
+    strategy:
+      matrix:
+        environment: [dev, test, prod]  # Deploy to all environments or select
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.6  # Example version
+
+      - name: Terraform Init
+        working-directory: env/${{ matrix.environment }}
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: env/${{ matrix.environment }}
+        run: terraform apply -auto-approve
+
