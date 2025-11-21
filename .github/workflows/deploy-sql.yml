@@ -14,7 +14,7 @@ jobs:
   detect-changes:
     runs-on: self-hosted
     outputs:
-      matrix: ${{ steps.detect.outputs.matrix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
       - name: Checkout code
@@ -47,18 +47,27 @@ jobs:
           fi
 
           MATRIX="$MATRIX]}"
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Matrix JSON: $MATRIX"
+
+          # Store matrix into a temp file to pass to next step
+          echo "$MATRIX" > matrix.json
+
+      - name: Set matrix output
+        id: set-matrix
+        run: echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
         env:
-          MATRIX: ${{ steps.detect.outputs.matrix }}
+          MATRIX: ${{ steps.set-matrix.outputs.matrix }}
         run: |
-          echo "Matrix output: $MATRIX"
+          echo "Final Matrix Output: $MATRIX"
 
 
   terraform:
     needs: detect-changes
     runs-on: self-hosted
+
+    if: ${{ needs.detect-changes.outputs.matrix != '{"include":[]}' }}
 
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
