@@ -10,76 +10,31 @@ on:
       - "env/prod/**"
 
 jobs:
-  detect-changes:
+  dev-test:
     runs-on: self-hosted
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Required for git diff
-
-      - name: Detect modified folders
-        id: detect
-        run: |
-          # Detect files changed in last commit
-          CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
-          echo "Changed files: $CHANGED"
-
-          MATRIX="{\"include\":["
-          FIRST=true
-
-          if echo "$CHANGED" | grep -q "^env/dev/"; then
-            MATRIX="$MATRIX{\"environment\":\"dev\"}"
-            FIRST=false
-          fi
-          if echo "$CHANGED" | grep -q "^env/test/"; then
-            [ "$FIRST" = false ] && MATRIX="$MATRIX,"
-            MATRIX="$MATRIX{\"environment\":\"test\"}"
-            FIRST=false
-          fi
-          if echo "$CHANGED" | grep -q "^env/prod/"; then
-            [ "$FIRST" = false ] && MATRIX="$MATRIX,"
-            MATRIX="$MATRIX{\"environment\":\"prod\"}"
-          fi
-
-          MATRIX="$MATRIX]}"
-          echo "Detected matrix: $MATRIX"
-
-      - name: Set matrix output
-        id: set-matrix
-        run: |
-          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
-
-      - name: Debug matrix
-        run: |
-          echo "Matrix output: ${{ steps.set-matrix.outputs.matrix }}"
-
-  terraform:
-    needs: detect-changes
-    # Use !empty() instead of length() to check matrix
-    if: ${{ !empty(fromJson(needs.detect-changes.outputs.matrix).include) }}
-    runs-on: self-hosted
-    strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    if: ${{ github.event.head_commit.message != '' }} # Always run on push with changes
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Terraform Init
-        working-directory: env/${{ matrix.environment }}
-        run: terraform init
+      - name: Deploy Dev
+        if: ${{ github.event.head_commit.modified != null && contains(join(github.event.head_commit.modified, ''), 'env/dev/') }}
+        working-directory: env/dev
+        run: |
+          terraform init
+          terraform apply -auto-approve
 
-      - name: Terraform Apply (Auto)
-        working-directory: env/${{ matrix.environment }}
-        run: terraform apply -auto-approve
-        if: matrix.environment != 'prod'
+      - name: Deploy Test
+        if: ${{ github.event.head_commit.modified != null && contains(join(github.event.head_commit.modified, ''), 'env/test/') }}
+        working-directory: env/test
+        run: |
+          terraform init
+          terraform apply -auto-approve
 
   prod-approval:
-    needs: terraform
     runs-on: ubuntu-latest
-    if: ${{ contains(needs.detect-changes.outputs.matrix, '"environment":"prod"') }}
+    needs: dev-test
+    if: ${{ github.event.head_commit.modified != null && contains(join(github.event.head_commit.modified, ''), 'env/prod/') }}
     steps:
       - name: Manual Approval for Prod
         uses: hmarr/auto-approve-action@v2
@@ -89,7 +44,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Terraform Init & Apply Prod
+      - name: Deploy Prod
         working-directory: env/prod
-        run: terraform apply -auto-approve
+        run: |
+          terraform init
+          terraform apply -auto-approve
 
