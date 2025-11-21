@@ -52,7 +52,7 @@ jobs:
         run: echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
-        run: echo "Matrix output: ${{ steps.set-matrix.outputs.matrix }}"
+        run: echo 'Matrix output: ${{ steps.set-matrix.outputs.matrix }}'
 
   terraform:
     needs: detect-changes
