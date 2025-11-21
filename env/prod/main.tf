@@ -17,7 +17,7 @@ resource "docker_image" "sqlserver" {
 
 # Create SQL Server container
 resource "docker_container" "sqlserver" {
-  name  = "sqlserver-prod"
+  name  = "sqlserver-prod-pull"
   image = docker_image.sqlserver.name
 
   env = [
