@@ -17,12 +17,12 @@ resource "docker_image" "sqlserver" {
 
 # Create SQL Server container
 resource "docker_container" "sqlserver" {
-  name  = "sqlserver-container3"
+  name  = "sqlserver-prod"
   image = docker_image.sqlserver.name
 
   env = [
     "ACCEPT_EULA=Y",
-    "SA_PASSWORD=StrongPassword123!"
+    "SA_PASSWORD=Mnbv*7894"
   ]
 
   # Map internal container port 1433 to a host port (e.g., 1434)
