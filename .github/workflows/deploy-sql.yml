@@ -8,6 +8,13 @@ on:
       - "env/dev/**"
       - "env/test/**"
       - "env/prod/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "env/dev/**"
+      - "env/test/**"
+      - "env/prod/**"
 
 jobs:
   detect-changes:
@@ -15,7 +22,7 @@ jobs:
     outputs:
       matrix: ${{ steps.detect.outputs.matrix }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -23,10 +30,10 @@ jobs:
       - name: Detect modified folders
         id: detect
         run: |
-          git fetch origin main
+          git fetch origin main || true
           CHANGED=$(git diff --name-only origin/main...HEAD || true)
           echo "Changed files: $CHANGED"
-          
+
           MATRIX="{\"include\":["
           FIRST=true
 
@@ -45,7 +52,6 @@ jobs:
           fi
 
           MATRIX="$MATRIX]}"
-          echo "Detected matrix: $MATRIX"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
@@ -57,32 +63,46 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Terraform Init & Apply
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
         working-directory: env/${{ matrix.environment }}
-        run: |
-          terraform init
-          terraform apply -auto-approve
-        if: matrix.environment != 'prod'
+        run: terraform init -input=false
 
-  prod-approval:
+      - name: Terraform Plan
+        working-directory: env/${{ matrix.environment }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply (non-prod)
+        if: matrix.environment != 'prod' && github.event_name == 'push'
+        working-directory: env/${{ matrix.environment }}
+        run: terraform apply -input=false -auto-approve tfplan
+
+  prod-apply:
     needs: terraform
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: contains(needs.detect-changes.outputs.matrix, '"environment":"prod"')
+    environment: prod   # 👈 approval handled in GitHub GUI
     steps:
-      - name: Manual Approval for Prod
-        uses: hmarr/auto-approve-action@v2
-        with:
-          message: "Approve Terraform apply for PROD environment"
-
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Terraform Init & Apply Prod
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init (prod)
         working-directory: env/prod
-        run: |
-          terraform init
-          terraform apply -auto-approve
+        run: terraform init -input=false
+
+      - name: Terraform Plan (prod)
+        working-directory: env/prod
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply (prod, after approval)
+        working-directory: env/prod
+        run: terraform apply -input=false -auto-approve tfplan
 
