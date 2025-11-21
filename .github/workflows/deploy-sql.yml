@@ -58,7 +58,8 @@ jobs:
 
   terraform:
     needs: detect-changes
-    if: ${{ fromJson(needs.detect-changes.outputs.matrix).include != null && length(fromJson(needs.detect-changes.outputs.matrix).include) > 0 }}
+    # Use !empty() instead of length() to check matrix
+    if: ${{ !empty(fromJson(needs.detect-changes.outputs.matrix).include) }}
     runs-on: self-hosted
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
