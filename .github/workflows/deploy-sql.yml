@@ -18,12 +18,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full history for git diff
+          fetch-depth: 0   # Fetch full history for git diff
 
       - name: Detect modified folders
         id: detect
         run: |
-          # Ensure we have the latest main branch
+          # Compare HEAD with main branch
           git fetch origin main
           CHANGED=$(git diff --name-only origin/main...HEAD || true)
           echo "Changed files: $CHANGED"
@@ -54,5 +54,43 @@ jobs:
         run: echo "::set-output name=matrix::${{ steps.detect.outputs.matrix }}"
 
       - name: Debug matrix
-        run: echo "Matrix output: ${{
+        run: echo "Matrix output: ${{ steps.set-matrix.outputs.matrix }}"
+
+  terraform:
+    needs: detect-changes
+    if: ${{ contains(needs.detect-changes.outputs.matrix, '"environment":"dev"') || 
+          contains(needs.detect-changes.outputs.matrix, '"environment":"test"') || 
+          contains(needs.detect-changes.outputs.matrix, '"environment":"prod"') }}
+    runs-on: self-hosted
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Terraform Init
+        working-directory: env/${{ matrix.environment }}
+        run: terraform init
+
+      - name: Terraform Apply (Auto)
+        working-directory: env/${{ matrix.environment }}
+        run: terraform apply -auto-approve
+        if: matrix.environment != 'prod'
+
+  prod-approval:
+    needs: terraform
+    runs-on: ubuntu-latest
+    if: contains(needs.detect-changes.outputs.matrix, '"environment":"prod"')
+    steps:
+      - name: Manual Approval for Prod
+        uses: hmarr/auto-approve-action@v2
+        with:
+          message: "Approve Terraform apply for PROD environment"
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Terraform Init & Apply Prod
+        working-directory: env/prod
+        run: terraform apply -auto-approve
 
