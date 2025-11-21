@@ -46,11 +46,11 @@ jobs:
 
           MATRIX="$MATRIX]}"
           echo "Detected matrix: $MATRIX"
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: Set matrix output
         id: set-matrix
-        run: echo "::set-output name=matrix::${{ steps.detect.outputs.matrix }}"
+        # Modern, non-deprecated way to set output
+        run: echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
         run: |
