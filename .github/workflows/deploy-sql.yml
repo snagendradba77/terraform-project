@@ -52,7 +52,8 @@ jobs:
       - name: Debug matrix
         env:
           MATRIX: ${{ steps.detect.outputs.matrix }}
-        run: echo "Matrix output: $MATRIX"
+        run: |
+          echo "Matrix output: $MATRIX"
 
 
   terraform:
@@ -62,7 +63,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
-    environment: ${{ matrix.environment }}   # <-- GitHub will auto-pause prod here
+    environment: ${{ matrix.environment }}
 
     steps:
       - name: Checkout code
