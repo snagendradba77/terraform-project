@@ -17,14 +17,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # important for git diff to work
 
       - name: Detect modified folders
         id: detect
         run: |
-          CHANGED=$(git diff --name-only HEAD^ HEAD || true)
+          # Get list of changed files compared to main
+          CHANGED=$(git diff --name-only origin/main...HEAD || true)
+          
           MATRIX="{\"include\":["
-
           FIRST=true
+          
           if echo "$CHANGED" | grep -q "^env/dev/"; then
             MATRIX="$MATRIX{\"environment\":\"dev\"}"
             FIRST=false
@@ -39,13 +43,9 @@ jobs:
             MATRIX="$MATRIX{\"environment\":\"prod\"}"
           fi
 
-          MATRIX="$MATRIX]}"
-          
-          # If no folders changed, set matrix to empty
-          if [ "$MATRIX" = "{\"include\":[]}" ]; then
-            echo "No environment folders changed."
-          fi
+          MATRIX="$MATRIX]}}"
 
+          echo "Detected matrix: $MATRIX"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: Set matrix output
@@ -66,7 +66,7 @@ jobs:
         working-directory: env/${{ matrix.environment }}
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Terraform Apply (Auto)
         working-directory: env/${{ matrix.environment }}
         run: terraform apply -auto-approve
         if: matrix.environment != 'prod'
