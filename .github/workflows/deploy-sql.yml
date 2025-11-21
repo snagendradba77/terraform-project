@@ -18,13 +18,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full history for git diff
+          fetch-depth: 0  # Required for git diff
 
       - name: Detect modified folders
         id: detect
         run: |
-          git fetch origin main
-          CHANGED=$(git diff --name-only origin/main...HEAD || true)
+          # Detect files changed in last commit
+          CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
           echo "Changed files: $CHANGED"
 
           MATRIX="{\"include\":["
@@ -49,8 +49,8 @@ jobs:
 
       - name: Set matrix output
         id: set-matrix
-        # Modern, non-deprecated way to set output
-        run: echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+        run: |
+          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
         run: |
@@ -58,7 +58,7 @@ jobs:
 
   terraform:
     needs: detect-changes
-    if: ${{ contains(needs.detect-changes.outputs.matrix, '"environment":"dev"') || contains(needs.detect-changes.outputs.matrix, '"environment":"test"') || contains(needs.detect-changes.outputs.matrix, '"environment":"prod"') }}
+    if: ${{ fromJson(needs.detect-changes.outputs.matrix).include != null && length(fromJson(needs.detect-changes.outputs.matrix).include) > 0 }}
     runs-on: self-hosted
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
