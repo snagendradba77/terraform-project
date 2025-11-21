@@ -26,10 +26,10 @@ jobs:
           git fetch origin main
           CHANGED=$(git diff --name-only origin/main...HEAD || true)
           echo "Changed files: $CHANGED"
-
+          
           MATRIX="{\"include\":["
-
           FIRST=true
+
           if echo "$CHANGED" | grep -q "^env/dev/"; then
             MATRIX="$MATRIX{\"environment\":\"dev\"}"
             FIRST=false
@@ -43,13 +43,16 @@ jobs:
             [ "$FIRST" = false ] && MATRIX="$MATRIX,"
             MATRIX="$MATRIX{\"environment\":\"prod\"}"
           fi
-          MATRIX="$MATRIX]}"
 
+          MATRIX="$MATRIX]}"
           echo "Detected matrix: $MATRIX"
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+      - name: Set matrix output
+        id: set-matrix
+        run: echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
       - name: Debug matrix
-        run: echo "Matrix output: ${{ steps.detect.outputs.matrix }}"
+        run: echo "Matrix output: ${{ steps.set-matrix.outputs.matrix }}"
 
   terraform:
     needs: detect-changes
@@ -65,7 +68,6 @@ jobs:
         run: |
           terraform init
           terraform apply -auto-approve
-        # Skip prod here; handled separately
         if: matrix.environment != 'prod'
 
   prod-approval:
