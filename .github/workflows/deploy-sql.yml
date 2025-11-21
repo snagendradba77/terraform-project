@@ -5,20 +5,55 @@ on:
     branches:
       - main
     paths:
-      - 'env/dev/**'
-      - 'env/test/**'
-      - 'env/prod/**'
+      - "env/dev/**"
+      - "env/test/**"
+      - "env/prod/**"
 
 jobs:
+  detect-changes:
+    runs-on: self-hosted
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Detect modified folders
+        id: detect
+        run: |
+          echo "Checking changed folders..."
+          CHANGED=$(git diff --name-only HEAD^ HEAD || true)
+
+          MATRIX="{\"include\":["
+
+          FIRST=true
+          if echo "$CHANGED" | grep -q "^env/dev/"; then
+            MATRIX="$MATRIX{\"environment\":\"dev\"}"
+            FIRST=false
+          fi
+          if echo "$CHANGED" | grep -q "^env/test/"; then
+            [ "$FIRST" = false ] && MATRIX="$MATRIX," 
+            MATRIX="$MATRIX{\"environment\":\"test\"}"
+            FIRST=false
+          fi
+          if echo "$CHANGED" | grep -q "^env/prod/"; then
+            [ "$FIRST" = false ] && MATRIX="$MATRIX," 
+            MATRIX="$MATRIX{\"environment\":\"prod\"}"
+          fi
+
+          MATRIX="$MATRIX]}"
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+      - name: Set matrix output
+        id: set-matrix
+        run: echo "::set-output name=matrix::${{ steps.detect.outputs.matrix }}"
+
   terraform:
+    needs: detect-changes
     runs-on: self-hosted
     strategy:
-      matrix:
-        environment: [dev, test, prod]
-
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Terraform Init
         working-directory: env/${{ matrix.environment }}
@@ -26,5 +61,22 @@ jobs:
 
       - name: Terraform Apply
         working-directory: env/${{ matrix.environment }}
+        run: terraform apply -auto-approve
+        if: matrix.environment != 'prod'
+
+  prod-approval:
+    needs: terraform
+    runs-on: ubuntu-latest
+    if: contains(needs.detect-changes.outputs.matrix, '"environment":"prod"')
+    steps:
+      - name: Manual Approval for Prod
+        uses: hmarr/auto-approve-action@v2
+        with:
+          message: "Approve Terraform apply for PROD environment"
+
+      - uses: actions/checkout@v3
+
+      - name: Terraform Init & Apply Prod
+        working-directory: env/prod
         run: terraform apply -auto-approve
 
