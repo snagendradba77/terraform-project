@@ -54,7 +54,7 @@ jobs:
         run: echo "::set-output name=matrix::${{ steps.detect.outputs.matrix }}"
 
       - name: Debug matrix
-        run: echo "Matrix output: ${{ steps.set-matrix.outputs.matrix }}"
+        run: echo 'Matrix output: ${{ steps.set-matrix.outputs.matrix }}'
 
   terraform:
     needs: detect-changes
