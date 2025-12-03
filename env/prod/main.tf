@@ -30,4 +30,4 @@ resource "docker_container" "sqlserver" {
 
   restart = "always"
 }
-}
+
