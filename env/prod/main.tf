@@ -9,27 +9,25 @@ terraform {
 
 provider "docker" {}
 
-# Pull SQL Server container image
 resource "docker_image" "sqlserver" {
   name         = "mcr.microsoft.com/mssql/server:2022-latest"
   keep_locally = true
 }
 
-# Create SQL Server container
 resource "docker_container" "sqlserver" {
-  name  = "sqlserver-prod-pull"
+  name  = "sqlserver-prod"
   image = docker_image.sqlserver.name
 
   env = [
     "ACCEPT_EULA=Y",
-    "SA_PASSWORD=Mnbv*7894"
+    "SA_PASSWORD=${var.sa_password}"
   ]
 
-  # Map internal container port 1433 to a host port (e.g., 1434)
   ports {
     internal = 1433
     external = 1479
   }
 
   restart = "always"
+}
 }
