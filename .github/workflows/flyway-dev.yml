@@ -18,7 +18,7 @@ jobs:
 
       - name: Run Flyway Migrations
         run: |
-          flyway -url="jdbc:sqlserver://localhost:1477" \
+          flyway -url="jdbc:sqlserver://localhost:1477;encrypt=true;trustServerCertificate=true" \
                  -user="sa" \
                  -password="${{ secrets.DEV_SQL_SA_PASSWORD }}" \
                  -locations="filesystem:env/dev/flyway/sql" migrate
