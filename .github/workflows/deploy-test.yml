@@ -3,7 +3,7 @@ name: Deploy SQL Server Docker - TEST
 on:
   push:
     branches:
-      - dev
+      - test
     paths:
       - "env/test/**"
 
