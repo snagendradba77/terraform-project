@@ -1,0 +1,25 @@
+name: Flyway Migrations - DEV
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "env/dev/flyway/sql/**"
+
+jobs:
+  migrate-dev:
+    runs-on: self-hosted
+    environment: dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Flyway Migrations
+        run: |
+          flyway -url="jdbc:sqlserver://localhost:1477" \
+                 -user="sa" \
+                 -password="${{ secrets.DEV_SQL_SA_PASSWORD }}" \
+                 -locations="filesystem:env/dev/flyway/sql" migrate
+
