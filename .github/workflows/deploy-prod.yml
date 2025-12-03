@@ -1,4 +1,4 @@
-name: Deploy SQL Server Docker - PROD
+name: Deploy SQL Server Docker - PROD1
 
 on:
   push:
