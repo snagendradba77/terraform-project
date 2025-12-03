@@ -16,14 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set SA Password
-        run: |
-          echo "sa_password=${{ secrets.DEV_SQL_SA_PASSWORD }}" > env/dev/terraform.tfvars
-
       - name: Terraform Init & Apply
         working-directory: env/dev
         run: |
           terraform init
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="sa_password=${{ secrets.DEV_SQL_SA_PASSWORD }}"
 
 
