@@ -1,4 +1,4 @@
-name: Deploy SQL Server Docker - PROD
+name: Deploy SQL Server Docker - PROD1
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
       - "env/prod/**"
 
 jobs:
-
   terraform-prod:
     runs-on: self-hosted
     environment: prod
@@ -17,9 +16,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+
       - name: Terraform Init & Apply (PROD)
         working-directory: env/prod
         run: |
           terraform init
-          terraform apply -auto-approve
-
+          terraform apply -auto-approve -var="sa_password=${{ secrets.DEV_SQL_SA_PASSWORD }}"
