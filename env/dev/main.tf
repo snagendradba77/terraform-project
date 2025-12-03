@@ -22,7 +22,7 @@ resource "docker_container" "sqlserver" {
 
   env = [
     "ACCEPT_EULA=Y",
-    "SA_PASSWORD=Mnbv*7894"
+    "SA_PASSWORD=${var.sa_password}"
   ]
 
   # Map internal container port 1433 to a host port (e.g., 1434)

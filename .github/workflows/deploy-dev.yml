@@ -8,7 +8,6 @@ on:
       - "env/dev/**"
 
 jobs:
-
   terraform-dev:
     runs-on: self-hosted
     environment: dev
@@ -17,9 +16,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Terraform Init & Apply (DEV)
+      - name: Set SA Password
+        run: |
+          echo "sa_password=${{ secrets.DEV_SQL_SA_PASSWORD }}" > env/dev/terraform.tfvars
+
+      - name: Terraform Init & Apply
         working-directory: env/dev
         run: |
           terraform init
           terraform apply -auto-approve
+
 
