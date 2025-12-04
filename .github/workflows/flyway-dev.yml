@@ -5,7 +5,7 @@ on:
     branches:
       - dev
     paths:
-      - "env/dev/flyway/sql/**"
+      - "env/sqlscript/dev/**"
 
 jobs:
   migrate-dev:
