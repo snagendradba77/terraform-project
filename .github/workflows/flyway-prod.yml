@@ -1,0 +1,25 @@
+name: Flyway Migrations - PROD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "SQLscriptdeployment/prod/**"
+
+jobs:
+  migrate-dev:
+    runs-on: self-hosted
+    environment: prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Flyway Migrations
+        run: |
+          flyway -url="jdbc:sqlserver://localhost:1479;encrypt=true;trustServerCertificate=true" \
+                 -user="sa" \
+                 -password="${{ secrets.PROD_SQL_SA_PASSWORD }}" \
+                 -locations="filesystem:SQLscriptdeployment/prod" migrate
+
