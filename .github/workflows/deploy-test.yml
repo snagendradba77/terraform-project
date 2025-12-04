@@ -1,0 +1,25 @@
+name: Deploy SQL Server Docker - TEST
+
+on:
+  push:
+    branches:
+      - test
+    paths:
+      - "env/test/**"
+
+jobs:
+
+  terraform-test:
+    runs-on: self-hosted
+    environment: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Terraform Init & Apply (TEST)
+        working-directory: env/test
+        run: |
+          terraform init
+          terraform apply -auto-approve -var="sa_password=${{ secrets.TEST_SQL_SA_PASSWORD }}"
+
