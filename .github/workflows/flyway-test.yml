@@ -1,0 +1,25 @@
+name: Flyway Migrations - TEST
+
+on:
+  push:
+    branches:
+      - test
+    paths:
+      - "SQLscriptdeployment/test/**"
+
+jobs:
+  migrate-dev:
+    runs-on: self-hosted
+    environment: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Flyway Migrations
+        run: |
+          flyway -url="jdbc:sqlserver://localhost:1478;encrypt=true;trustServerCertificate=true" \
+                 -user="sa" \
+                 -password="${{ secrets.TEST_SQL_SA_PASSWORD }}" \
+                 -locations="filesystem:SQLscriptdeployment/test" migrate
+
