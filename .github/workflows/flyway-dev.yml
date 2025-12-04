@@ -5,7 +5,7 @@ on:
     branches:
       - dev
     paths:
-      - "env/sqlscript/dev/**"
+      - "SQLscriptdeployment/dev/**"
 
 jobs:
   migrate-dev:
@@ -21,5 +21,5 @@ jobs:
           flyway -url="jdbc:sqlserver://localhost:1477;encrypt=true;trustServerCertificate=true" \
                  -user="sa" \
                  -password="${{ secrets.DEV_SQL_SA_PASSWORD }}" \
-                 -locations="filesystem:env/dev/flyway/sql" migrate
+                 -locations="filesystem:SQLscriptdeployment/dev" migrate
 
